@@ -40,7 +40,7 @@
         <figure style="background-color: {{ $color }}; aspect-ratio: {{ $thumbnail.Width }} / {{ $thumbnail.Height }}">
           <img class="lazyload" width="{{ $thumbnail.Width }}" height="{{ $thumbnail.Height }}" data-src="{{site.Params.cos_base_url}}{{ $image.RelPermalink }}?imageMogr2/thumbnail/{{$thumbnail.Width}}x{{$thumbnail.Height}}" alt="{{ .Title }}" />
         </figure>
-        <meta itemprop="contentUrl" content="{{ if $publishResources }}{{ $image.RelPermalink }}{{ else }}{{ $full.RelPermalink }}{{ end }}" />
+        <meta itemprop="contentUrl" content="{{ if $publishResources }}{{ $cos_image_url }}{{ else }}{{ $cos_full_url }}{{ end }}" />
         {{ with site.Params.Author }}
           <span itemprop="creator" itemtype="https://schema.org/Person" itemscope>
             <meta itemprop="name" content="{{ site.Params.Author.name }}" />

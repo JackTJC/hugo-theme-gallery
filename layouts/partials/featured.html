@@ -9,8 +9,9 @@
     {{ $featured := $cover | default ((.Resources.ByType "image").GetMatch (.Params.featured_image | default "*feature*")) | default (index $gallery.images 0) }}
     {{ $thumbnail := $featured.Filter (slice images.AutoOrient (images.Process "fit 1600x1600")) }}
     {{ $color := index $thumbnail.Colors 0 | default "transparent" }}
+    {{ $featured_url := printf "%s%s%s" site.Params.cos_base_url  $featured.RelPermalink "?imageMogr2/thumbnail/1600x1600" }}
     <section class="featured">
-      <a class="featured-card" href="{{ .RelPermalink }}" style="background-color: {{ $color }}; background-image: url({{ $thumbnail.RelPermalink }})">
+      <a class="featured-card" href="{{ .RelPermalink }}" style="background-color: {{ $color }}; background-image: url({{$featured_url}})">
         <div>
           <h2>{{ .Title }}</h2>
           <p>
