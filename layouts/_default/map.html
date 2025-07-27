@@ -4,6 +4,16 @@
 <!-- 引入 Leaflet.js 库 -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+
+<!-- PhotoSwipe (v5) -->
+<link rel="stylesheet" href="https://unpkg.com/photoswipe@5/dist/photoswipe.css">
+<script type="module">
+  // PhotoSwipe v5 使用 ES Module，所以我们在这里导入它
+  // 我们将把它附加到 window 对象，以便在下面的常规脚本中使用
+  import PhotoSwipe from 'https://unpkg.com/photoswipe@5/dist/photoswipe.esm.js';
+  window.PhotoSwipe = PhotoSwipe;
+</script>
+
 <style>
   /* 自定义照片标记样式 */
   .leaflet-photo-icon {
@@ -24,11 +34,19 @@
   }
   .leaflet-popup-content-wrapper {
     border-radius: 8px;
+    background-color: #fff; /* 确保背景不透明 */
   }
-  .leaflet-popup-content {
-    margin: 10px;
+ .leaflet-popup-content {
+    margin: 13px 19px;
     text-align: center;
   }
+  /* .popup-thumbnail {
+    width: 150px; /* 稍微放大弹窗中的图片，更易于点击 */
+    height: 150px;
+    object-fit: cover;
+    border-radius: 4px;
+    cursor: pointer;
+  } */
 </style>
 
 <script>
@@ -49,14 +67,16 @@
                 "src": "{{ printf "%s%s" site.Params.cos_base_url .RelPermalink }}",
                 "thumbnail": "{{ printf "%s%s%s" site.Params.cos_base_url .RelPermalink "?imageMogr2/thumbnail/300x300"}}",
                 "pop_thumbnail": "{{ printf "%s%s%s" site.Params.cos_base_url .RelPermalink "?imageMogr2/thumbnail/80x80"}}",
-                "caption": "{{ with $.Title }}{{ . }}{{ else }}{{ $.Name }}{{ end }}"
+                "caption": "{{ with $.Title }}{{ . }}{{ else }}{{ $.Name }}{{ end }}",
+                "w": {{ .Width }},  // 添加原始宽度
+                "h": {{ .Height }} // 添加原始高度
               },
             {{ end }}
         {{ end }}
       {{ end }}
     ];
 
-    photos.forEach(function(photo) {
+    photos.forEach(function(photo,index) {
               // 使用 L.divIcon 创建基于 HTML 的自定义图标
       var photoIcon = L.divIcon({
         html: '<img src="' + photo.thumbnail + '" alt="' + photo.caption + '">',
@@ -65,7 +85,36 @@
         iconAnchor: [25, 50]      // 图标锚点（底部中心）
       });
       var marker = L.marker([photo.lat, photo.lon],{icon:photoIcon}).addTo(map);
-      marker.bindPopup('<a href="' + photo.src + '" data-pswp-src="' + photo.src + '"><img src="' + photo.thumbnail + '" alt="' + photo.caption + '" style="width:100px;"/></a>');
+      var popupContent = '<a href="' + photo.src + '" class="photoswipe-trigger" data-index="' + index + '">' +
+                           '<img src="' + photo.thumbnail + '" alt="' + photo.caption + '" class="popup-thumbnail"/>' +
+                         '</a><p style="margin-top: 5px;">' + photo.caption + '</p>';
+
+      // marker.bindPopup('<a href="' + photo.src + '" data-pswp-src="' + photo.src + '"><img src="' + photo.thumbnail + '" alt="' + photo.caption + '" style="width:100px;"/></a>');
+      marker.bindPopup(popupContent)
+    });
+       // 4. 实现 PhotoSwipe 的核心逻辑
+    // 使用事件委托，监听地图容器上的点击事件
+    map.getContainer().addEventListener('click', function(event) {
+      // 检查被点击的元素是否是我们的触发器
+      if (event.target.closest('.photoswipe-trigger')) {
+        event.preventDefault(); // 阻止 a 标签的默认跳转行为
+
+        const link = event.target.closest('.photoswipe-trigger');
+        const clickedIndex = parseInt(link.dataset.index, 10);
+
+        // 如果 PhotoSwipe 库已加载
+        if (window.PhotoSwipe) {
+          const options = {
+            dataSource: photos, // 使用我们准备好的 photos 数组作为数据源
+            index: clickedIndex, // 从点击的图片开始
+            pswpModule: window.PhotoSwipe // 传递 PhotoSwipe 模块本身
+          };
+          const lightbox = new window.PhotoSwipe(options);
+          lightbox.init(); // 初始化并打开画廊
+        } else {
+            console.error("PhotoSwipe library is not loaded.");
+        }
+      }
     });
   });
 </script>
