@@ -11,7 +11,12 @@
   // PhotoSwipe v5 使用 ES Module，所以我们在这里导入它
   // 我们将把它附加到 window 对象，以便在下面的常规脚本中使用
   import PhotoSwipe from 'https://unpkg.com/photoswipe@5/dist/photoswipe.esm.js';
+  import PhotoSwipeDynamicCaption from 'https://unpkg.com/photoswipe-dynamic-caption-plugin/photoswipe-dynamic-caption-plugin.esm.js';
+  import PhotoSwipeLightbox from 'https://unpkg.com/photoswipe@5/dist/photoswipe-lightbox.esm.js';
   window.PhotoSwipe = PhotoSwipe;
+  window.PhotoSwipeDynamicCaption = PhotoSwipeDynamicCaption;
+    window.PhotoSwipeLightbox = PhotoSwipeLightbox;
+
 </script>
 
 <style>
@@ -58,9 +63,17 @@
     }).addTo(map);
 
     var photos = [
-      {{ range .Site.Pages }}
+      {{ range $page:=.Site.Pages }}
         {{ range .Resources.ByType "image" }}
             {{ if and .Exif .Exif.Lat .Exif.Long }}
+              {{ $mdFilename := printf "%s.md" (path.BaseName .Name) }}
+              {{ $mdFile := $page.Resources.GetMatch $mdFilename}}
+              {{ $captionContent := "" }}
+              {{ if $mdFile }}
+                {{ $captionContent = $mdFile.Content }}
+              {{ else }}
+                {{ $captionContent = .Params.Description}}
+              {{ end }}             
               {
                 "lat": {{ .Exif.Lat }},
                 "lon": {{ .Exif.Long }},
@@ -68,7 +81,7 @@
                 "downloadSrc": "{{ printf "%s%s" site.Params.cos_base_url .RelPermalink}}",
                 "thumbnail": "{{ printf "%s%s%s" site.Params.cos_base_url .RelPermalink "?imageMogr2/thumbnail/300x300"}}",
                 "pop_thumbnail": "{{ printf "%s%s%s" site.Params.cos_base_url .RelPermalink "?imageMogr2/thumbnail/80x80"}}",
-                "caption": "{{ with $.Title }}{{ . }}{{ else }}{{ $.Name }}{{ end }}",
+                "caption": "{{$captionContent | safeJS}}",
                 "w": {{ .Width }},  // 添加原始宽度
                 "h": {{ .Height }} // 添加原始高度
               },
@@ -76,30 +89,20 @@
         {{ end }}
       {{ end }}
     ];
+    
+    // 初始化 Lightbox 和插件的逻辑 (无变化)
+    const lightbox = new window.PhotoSwipeLightbox({
+        dataSource: photos,
+        pswpModule: window.PhotoSwipe,
+        showHideAnimationType: 'zoom',
+        bgOpacity: 0.9
+    });
 
-    photos.forEach(function(photo,index) {
-              // 使用 L.divIcon 创建基于 HTML 的自定义图标
-      var photoIcon = L.divIcon({
-        html: '<img src="' + photo.thumbnail + '" alt="' + photo.caption + '">',
-        className: 'leaflet-photo-icon', // 应用自定义 CSS
-        iconSize: [50, 50],       // 图标尺寸
-        iconAnchor: [25, 50]      // 图标锚点（底部中心）
-      });
-      var marker = L.marker([photo.lat, photo.lon],{icon:photoIcon}).addTo(map);
-      // 移除 bindPopup，直接监听 marker 的 'click' 事件
-      marker.on('click', function() {
-        // 检查 PhotoSwipe 库是否已加载
-        if (window.PhotoSwipe) {
-          const options = {
-            dataSource: photos, // 数据源是所有照片的数组
-            index: index,       // 从当前点击的这张照片开始预览 (利用闭包特性)
-            pswpModule: window.PhotoSwipe
-          };
-          const lightbox = new window.PhotoSwipe(options);
+
            // --- 步骤 3: 自定义 UI，添加下载按钮 ---
           // 在 PhotoSwipe 初始化之前，注册一个新的 UI 元素
           lightbox.on('uiRegister', function() {
-            lightbox.ui.registerElement({
+            lightbox.pswp.ui.registerElement({
               name: 'download-button',
               order: 8,
               isButton: true,
@@ -128,11 +131,35 @@
               }
             });
           });
-
-          lightbox.init(); // 初始化并打开预览
-        } else {
-            console.error("PhotoSwipe library is not loaded.");
+           // --- 步骤 4: 初始化动态标题插件 ---
+    const captionPlugin = new window.PhotoSwipeDynamicCaption(lightbox, {
+        type: 'auto', // 自动决定标题布局 (在下方或在旁边)
+        mobileLayoutBreakpoint: 700,
+        mobileCaptionOverlapRatio: 1,
+         // 根据文档，我们提供一个函数
+        captionContent: (slide) => {
+          // 'slide.data' 就是我们 'photos' 数组中的那个对象
+          // 我们直接返回这个对象的 'caption' 属性即可
+          return slide.data.caption;
         }
+    });
+
+        lightbox.init();
+
+
+    photos.forEach(function(photo,index) {
+              // 使用 L.divIcon 创建基于 HTML 的自定义图标
+      var photoIcon = L.divIcon({
+        html: '<img src="' + photo.thumbnail + '" alt="">',
+        className: 'leaflet-photo-icon', // 应用自定义 CSS
+        iconSize: [50, 50],       // 图标尺寸
+        iconAnchor: [25, 50]      // 图标锚点（底部中心）
+      });
+      var marker = L.marker([photo.lat, photo.lon],{icon:photoIcon}).addTo(map);
+      // 移除 bindPopup，直接监听 marker 的 'click' 事件
+      marker.on('click', function() {
+        // 检查 PhotoSwipe 库是否已加载
+        lightbox.loadAndOpen(index);
       });
     });
   });
