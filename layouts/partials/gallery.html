@@ -40,7 +40,17 @@
       <a class="gallery-item" href="{{ if $publishResources }}{{ $cos_image_url }}{{ else }}{{ $cos_full_url }}{{ end }}" data-pswp-src="{{ $cos_full_url }}" data-pswp-width="{{ $full.Width }}" data-pswp-height="{{ $full.Height }}" data-pswp-target="{{ $image.Name | urlize }}"  title="{{ .Title }}" itemscope itemtype="https://schema.org/ImageObject" style="aspect-ratio: {{ $thumbnail.Width }} / {{ $thumbnail.Height }}">
         <figure style="background-color: {{ $color }}; aspect-ratio: {{ $thumbnail.Width }} / {{ $thumbnail.Height }}">
           <img class="lazyload" width="{{ $thumbnail.Width }}" height="{{ $thumbnail.Height }}" data-src="{{$cos_thumbnail_url}}" alt="{{ .Title }}" />
-          <span class="pswp-caption-content">{{$caption}}</span>
+          <span class="pswp-caption-content">
+              <!-- {{ $baseName := strings.TrimSuffix (path.Ext .image.Name) .image.Name }} -->
+              {{ $mdFilename := printf "%s.md" (path.BaseName $image.Name) }}
+              {{/* 使用 $.Resources 从顶层页面上下文获取资源 */}}
+              {{ with $.Resources.GetMatch $mdFilename }}
+                {{ .Content | safeHTML }}
+              {{ else }}
+                {{/* 如果没有找到md文件, 就显示图片的描述 */}}
+                {{ .Description}}
+              {{ end }}
+          </span>
         </figure>
         <meta itemprop="contentUrl" content="{{ if $publishResources }}{{ $cos_image_url }}{{ else }}{{ $cos_full_url }}{{ end }}" />
         {{ with site.Params.Author }}
