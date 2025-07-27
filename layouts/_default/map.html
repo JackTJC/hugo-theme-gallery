@@ -4,6 +4,32 @@
 <!-- 引入 Leaflet.js 库 -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<style>
+  /* 自定义照片标记样式 */
+  .leaflet-photo-icon {
+    background: transparent;
+    border: none;
+  }
+  .leaflet-photo-icon img {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+    object-fit: cover;
+    transition: transform 0.2s ease-in-out;
+  }
+  .leaflet-photo-icon img:hover {
+    transform: scale(1.1);
+  }
+  .leaflet-popup-content-wrapper {
+    border-radius: 8px;
+  }
+  .leaflet-popup-content {
+    margin: 10px;
+    text-align: center;
+  }
+</style>
 
 <script>
   document.addEventListener('DOMContentLoaded', function () {
@@ -20,8 +46,9 @@
               {
                 "lat": {{ .Exif.Lat }},
                 "lon": {{ .Exif.Long }},
-                "src": "{{ .RelPermalink }}",
-                "thumbnail": "{{ .RelPermalink }}",
+                "src": "{{ printf "%s%s" site.Params.cos_base_url .RelPermalink }}",
+                "thumbnail": "{{ printf "%s%s%s" site.Params.cos_base_url .RelPermalink "?imageMogr2/thumbnail/300x300"}}",
+                "pop_thumbnail": "{{ printf "%s%s%s" site.Params.cos_base_url .RelPermalink "?imageMogr2/thumbnail/80x80"}}",
                 "caption": "{{ with $.Title }}{{ . }}{{ else }}{{ $.Name }}{{ end }}"
               },
             {{ end }}
@@ -30,7 +57,14 @@
     ];
 
     photos.forEach(function(photo) {
-      var marker = L.marker([photo.lat, photo.lon]).addTo(map);
+              // 使用 L.divIcon 创建基于 HTML 的自定义图标
+      var photoIcon = L.divIcon({
+        html: '<img src="' + photo.thumbnail + '" alt="' + photo.caption + '">',
+        className: 'leaflet-photo-icon', // 应用自定义 CSS
+        iconSize: [50, 50],       // 图标尺寸
+        iconAnchor: [25, 50]      // 图标锚点（底部中心）
+      });
+      var marker = L.marker([photo.lat, photo.lon],{icon:photoIcon}).addTo(map);
       marker.bindPopup('<a href="' + photo.src + '" data-pswp-src="' + photo.src + '"><img src="' + photo.thumbnail + '" alt="' + photo.caption + '" style="width:100px;"/></a>');
     });
   });
