@@ -1,0 +1,38 @@
+{{ define "main" }}
+<div id="map" style="height: 80vh;"></div>
+
+<!-- 引入 Leaflet.js 库 -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var map = L.map('map').setView([35, 105], 4); // 默认中心点设为中国
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    var photos = [
+      {{ range .Site.Pages }}
+        {{ range .Resources.ByType "image" }}
+            {{ if and .Exif .Exif.Lat .Exif.Long }}
+              {
+                "lat": {{ .Exif.Lat }},
+                "lon": {{ .Exif.Long }},
+                "src": "{{ .RelPermalink }}",
+                "thumbnail": "{{ .RelPermalink }}",
+                "caption": "{{ with $.Title }}{{ . }}{{ else }}{{ $.Name }}{{ end }}"
+              },
+            {{ end }}
+        {{ end }}
+      {{ end }}
+    ];
+
+    photos.forEach(function(photo) {
+      var marker = L.marker([photo.lat, photo.lon]).addTo(map);
+      marker.bindPopup('<a href="' + photo.src + '" data-pswp-src="' + photo.src + '"><img src="' + photo.thumbnail + '" alt="' + photo.caption + '" style="width:100px;"/></a>');
+    });
+  });
+</script>
+{{ end }}
