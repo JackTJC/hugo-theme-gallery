@@ -48,7 +48,7 @@
                 {{ .Content | safeHTML }}
               {{ else }}
                 {{/* 如果没有找到md文件, 就显示图片的描述 */}}
-                {{ .Description}}
+                {{ $image.Params.Description}}
               {{ end }}
           </span>
         </figure>
