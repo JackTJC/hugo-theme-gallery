@@ -15,7 +15,7 @@
   import PhotoSwipeLightbox from 'https://unpkg.com/photoswipe@5/dist/photoswipe-lightbox.esm.js';
   window.PhotoSwipe = PhotoSwipe;
   window.PhotoSwipeDynamicCaption = PhotoSwipeDynamicCaption;
-    window.PhotoSwipeLightbox = PhotoSwipeLightbox;
+  window.PhotoSwipeLightbox = PhotoSwipeLightbox;
 
 </script>
 
@@ -25,33 +25,41 @@
     background: transparent;
     border: none;
   }
+
   .leaflet-photo-icon img {
     width: 50px;
     height: 50px;
     border-radius: 50%;
     border: 2px solid #fff;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
     object-fit: cover;
     transition: transform 0.2s ease-in-out;
   }
+
   .leaflet-photo-icon img:hover {
     transform: scale(1.1);
   }
+
   .leaflet-popup-content-wrapper {
     border-radius: 8px;
-    background-color: #fff; /* 确保背景不透明 */
+    background-color: #fff;
+    /* 确保背景不透明 */
   }
- .leaflet-popup-content {
+
+  .leaflet-popup-content {
     margin: 13px 19px;
     text-align: center;
   }
+
   /* .popup-thumbnail {
     width: 150px; /* 稍微放大弹窗中的图片，更易于点击 */
-    height: 150px;
-    object-fit: cover;
-    border-radius: 4px;
-    cursor: pointer;
-  } */
+  height: 150px;
+  object-fit: cover;
+  border-radius: 4px;
+  cursor: pointer;
+  }
+
+  */
 </style>
 
 <script>
@@ -90,78 +98,78 @@
       {{ end }}
     ];
     
-    // 初始化 Lightbox 和插件的逻辑 (无变化)
-    const lightbox = new window.PhotoSwipeLightbox({
+      // 初始化 Lightbox 和插件的逻辑 (无变化)
+      const lightbox = new window.PhotoSwipeLightbox({
         dataSource: photos,
         pswpModule: window.PhotoSwipe,
         showHideAnimationType: 'zoom',
         bgOpacity: 0.9
-    });
+      });
 
 
-           // --- 步骤 3: 自定义 UI，添加下载按钮 ---
-          // 在 PhotoSwipe 初始化之前，注册一个新的 UI 元素
-          lightbox.on('uiRegister', function() {
-            lightbox.pswp.ui.registerElement({
-              name: 'download-button',
-              order: 8,
-              isButton: true,
-              tagName: 'a',
+      // --- 步骤 3: 自定义 UI，添加下载按钮 ---
+      // 在 PhotoSwipe 初始化之前，注册一个新的 UI 元素
+      lightbox.on('uiRegister', function () {
+        lightbox.pswp.ui.registerElement({
+          name: 'download-button',
+          order: 8,
+          isButton: true,
+          tagName: 'a',
 
-              // SVG for the download icon
-              html: {
-          isCustomSVG: true,
-          inner: '<path d="M20.5 14.3 17.1 18V10h-2.2v7.9l-3.4-3.6L10 16l6 6.1 6-6.1ZM23 23H9v2h14Z" id="pswp__icn-download"/>',
-          outlineID: "pswp__icn-download",
-              },
-              
-              onInit: (el, pswp) => {
-                // 设置 `<a>` 标签的属性
-                el.setAttribute('title', 'Download high-resolution image');
-                el.setAttribute('target', '_blank');
-                el.setAttribute('rel', 'noopener'); // 安全性考虑
-                
-                // 监听 PhotoSwipe 的 'change' 事件，每次切换图片时更新下载链接
-                pswp.on('change', () => {
-                  const currSlide = pswp.currSlide;
-                  if (currSlide && currSlide.data.downloadSrc) {
-                    el.href = currSlide.data.downloadSrc;
-                  }
-                });
+          // SVG for the download icon
+          html: {
+            isCustomSVG: true,
+            inner: '<path d="M20.5 14.3 17.1 18V10h-2.2v7.9l-3.4-3.6L10 16l6 6.1 6-6.1ZM23 23H9v2h14Z" id="pswp__icn-download"/>',
+            outlineID: "pswp__icn-download",
+          },
+
+          onInit: (el, pswp) => {
+            // 设置 `<a>` 标签的属性
+            el.setAttribute('title', 'Download high-resolution image');
+            el.setAttribute('target', '_blank');
+            el.setAttribute('rel', 'noopener'); // 安全性考虑
+
+            // 监听 PhotoSwipe 的 'change' 事件，每次切换图片时更新下载链接
+            pswp.on('change', () => {
+              const currSlide = pswp.currSlide;
+              if (currSlide && currSlide.data.downloadSrc) {
+                el.href = currSlide.data.downloadSrc;
               }
             });
-          });
-           // --- 步骤 4: 初始化动态标题插件 ---
-    const captionPlugin = new window.PhotoSwipeDynamicCaption(lightbox, {
+          }
+        });
+      });
+      // --- 步骤 4: 初始化动态标题插件 ---
+      const captionPlugin = new window.PhotoSwipeDynamicCaption(lightbox, {
         type: 'auto', // 自动决定标题布局 (在下方或在旁边)
         mobileLayoutBreakpoint: 700,
         mobileCaptionOverlapRatio: 1,
-         // 根据文档，我们提供一个函数
+        // 根据文档，我们提供一个函数
         captionContent: (slide) => {
           // 'slide.data' 就是我们 'photos' 数组中的那个对象
           // 我们直接返回这个对象的 'caption' 属性即可
           return slide.data.caption;
         }
-    });
-
-        lightbox.init();
-
-
-    photos.forEach(function(photo,index) {
-              // 使用 L.divIcon 创建基于 HTML 的自定义图标
-      var photoIcon = L.divIcon({
-        html: '<img src="' + photo.thumbnail + '" alt="">',
-        className: 'leaflet-photo-icon', // 应用自定义 CSS
-        iconSize: [50, 50],       // 图标尺寸
-        iconAnchor: [25, 50]      // 图标锚点（底部中心）
       });
-      var marker = L.marker([photo.lat, photo.lon],{icon:photoIcon}).addTo(map);
-      // 移除 bindPopup，直接监听 marker 的 'click' 事件
-      marker.on('click', function() {
-        // 检查 PhotoSwipe 库是否已加载
-        lightbox.loadAndOpen(index);
+
+      lightbox.init();
+
+
+      photos.forEach(function (photo, index) {
+        // 使用 L.divIcon 创建基于 HTML 的自定义图标
+        var photoIcon = L.divIcon({
+          html: '<img src="' + photo.thumbnail + '" alt="">',
+          className: 'leaflet-photo-icon', // 应用自定义 CSS
+          iconSize: [50, 50],       // 图标尺寸
+          iconAnchor: [25, 50]      // 图标锚点（底部中心）
+        });
+        var marker = L.marker([photo.lat, photo.lon], { icon: photoIcon }).addTo(map);
+        // 移除 bindPopup，直接监听 marker 的 'click' 事件
+        marker.on('click', function () {
+          // 检查 PhotoSwipe 库是否已加载
+          lightbox.loadAndOpen(index);
+        });
       });
-    });
   });
 </script>
 {{ end }}
