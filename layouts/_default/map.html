@@ -64,7 +64,8 @@
               {
                 "lat": {{ .Exif.Lat }},
                 "lon": {{ .Exif.Long }},
-                "src": "{{ printf "%s%s" site.Params.cos_base_url .RelPermalink }}",
+                "src": "{{ printf "%s%s%s" site.Params.cos_base_url .RelPermalink "?imageMogr2/thumbnail/1600x1600"}}",
+                "downloadSrc": "{{ printf "%s%s" site.Params.cos_base_url .RelPermalink}}",
                 "thumbnail": "{{ printf "%s%s%s" site.Params.cos_base_url .RelPermalink "?imageMogr2/thumbnail/300x300"}}",
                 "pop_thumbnail": "{{ printf "%s%s%s" site.Params.cos_base_url .RelPermalink "?imageMogr2/thumbnail/80x80"}}",
                 "caption": "{{ with $.Title }}{{ . }}{{ else }}{{ $.Name }}{{ end }}",
@@ -85,36 +86,54 @@
         iconAnchor: [25, 50]      // 图标锚点（底部中心）
       });
       var marker = L.marker([photo.lat, photo.lon],{icon:photoIcon}).addTo(map);
-      var popupContent = '<a href="' + photo.src + '" class="photoswipe-trigger" data-index="' + index + '">' +
-                           '<img src="' + photo.thumbnail + '" alt="' + photo.caption + '" class="popup-thumbnail"/>' +
-                         '</a><p style="margin-top: 5px;">' + photo.caption + '</p>';
-
-      // marker.bindPopup('<a href="' + photo.src + '" data-pswp-src="' + photo.src + '"><img src="' + photo.thumbnail + '" alt="' + photo.caption + '" style="width:100px;"/></a>');
-      marker.bindPopup(popupContent)
-    });
-       // 4. 实现 PhotoSwipe 的核心逻辑
-    // 使用事件委托，监听地图容器上的点击事件
-    map.getContainer().addEventListener('click', function(event) {
-      // 检查被点击的元素是否是我们的触发器
-      if (event.target.closest('.photoswipe-trigger')) {
-        event.preventDefault(); // 阻止 a 标签的默认跳转行为
-
-        const link = event.target.closest('.photoswipe-trigger');
-        const clickedIndex = parseInt(link.dataset.index, 10);
-
-        // 如果 PhotoSwipe 库已加载
+      // 移除 bindPopup，直接监听 marker 的 'click' 事件
+      marker.on('click', function() {
+        // 检查 PhotoSwipe 库是否已加载
         if (window.PhotoSwipe) {
           const options = {
-            dataSource: photos, // 使用我们准备好的 photos 数组作为数据源
-            index: clickedIndex, // 从点击的图片开始
-            pswpModule: window.PhotoSwipe // 传递 PhotoSwipe 模块本身
+            dataSource: photos, // 数据源是所有照片的数组
+            index: index,       // 从当前点击的这张照片开始预览 (利用闭包特性)
+            pswpModule: window.PhotoSwipe
           };
           const lightbox = new window.PhotoSwipe(options);
-          lightbox.init(); // 初始化并打开画廊
+           // --- 步骤 3: 自定义 UI，添加下载按钮 ---
+          // 在 PhotoSwipe 初始化之前，注册一个新的 UI 元素
+          lightbox.on('uiRegister', function() {
+            lightbox.ui.registerElement({
+              name: 'download-button',
+              order: 8,
+              isButton: true,
+              tagName: 'a',
+
+              // SVG for the download icon
+              html: {
+          isCustomSVG: true,
+          inner: '<path d="M20.5 14.3 17.1 18V10h-2.2v7.9l-3.4-3.6L10 16l6 6.1 6-6.1ZM23 23H9v2h14Z" id="pswp__icn-download"/>',
+          outlineID: "pswp__icn-download",
+              },
+              
+              onInit: (el, pswp) => {
+                // 设置 `<a>` 标签的属性
+                el.setAttribute('title', 'Download high-resolution image');
+                el.setAttribute('target', '_blank');
+                el.setAttribute('rel', 'noopener'); // 安全性考虑
+                
+                // 监听 PhotoSwipe 的 'change' 事件，每次切换图片时更新下载链接
+                pswp.on('change', () => {
+                  const currSlide = pswp.currSlide;
+                  if (currSlide && currSlide.data.downloadSrc) {
+                    el.href = currSlide.data.downloadSrc;
+                  }
+                });
+              }
+            });
+          });
+
+          lightbox.init(); // 初始化并打开预览
         } else {
             console.error("PhotoSwipe library is not loaded.");
         }
-      }
+      });
     });
   });
 </script>
