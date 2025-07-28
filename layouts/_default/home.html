@@ -2,6 +2,9 @@
   {{ partial "title.html" . }}
   {{ partial "categories.html" }}
   {{ partial "featured.html" . }}
+  <div style="text-align: center; margin: 20px;">
+    <a href="{{ "map/" | relLangURL }}" class="button" style="padding: 10px 20px; border: 1px solid #ccc; background-color: #f0f0f0; text-decoration: none; color: #333; border-radius: 5px;">在地图上展示</a>
+  </div>
   <section class="galleries">
     {{ range where .Pages "Params.private" "ne" true }}
       {{ partial "album-card.html" . }}
